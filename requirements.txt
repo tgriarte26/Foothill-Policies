@@ -1,0 +1,17 @@
+streamlit>=1.36.0
+boto3>=1.35.0
+botocore>=1.35.0
+python-dotenv>=1.0.0
+pdfplumber>=0.11.0
+python-docx>=1.1.0
+
+# fastapi/uvicorn only needed if you're still using the older server.py +
+# dashboard.html split instead of the single-file Streamlit apps below.
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.6.0
+
+# If /api/ask errors with something like "Unknown parameter" or
+# "Unrecognized field" on retrieve() or converse(), run:
+#   pip install --upgrade boto3 botocore
+# Managed Knowledge Base support was added to boto3 relatively recently.
