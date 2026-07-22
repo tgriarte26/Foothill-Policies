@@ -1,10 +1,11 @@
 (function(){
 'use strict';
-var SK='fhda_st',TK='fhda_th',DK='fhda_du',TLK='fhda_tl',CK='fhda_cat',STGK='fhda_stages';
+var SK='fhda_st',TK='fhda_th',DK='fhda_du',TLK='fhda_tl',CK='fhda_cat',STGK='fhda_stages',SDK='fhda_stage_dates';
 var SL={'needs-review':'Needs Review','in-progress':'In Progress','approved':'Approved','completed':'Completed','archived':'Archived'};
-var DEFAULT_STAGES=['Chancellor\'s 1st Read','Chancellor\'s 2nd Read','Board of Trustees 1st Read','Board of Trustees 2nd Read'];
-var docs=[],so={},dd={},tl={},cat={},stages=[],filter='all',chapter='all',sort='number-asc',query='';
+var DEFAULT_STAGES=['Chancellor\'s Advisory Committee 1st Read','Chancellor\'s Advisory Committee 2nd Read','Board of Trustees 1st Read','Board of Trustees 2nd Read'];
+var docs=[],so={},dd={},tl={},cat={},stages=[],stageDates={},filter='all',chapter='all',sort='number-asc',query='';
 var currentTlDoc=null;
+var pendingRemoveIdx=null;
 
 var tbody=document.getElementById('documents-tbody');
 var empty=document.getElementById('empty-state');
@@ -28,6 +29,9 @@ var tlStatus=document.getElementById('timeline-status');
 var tlClose=document.getElementById('timeline-close');
 var tlNodes=document.getElementById('timeline-nodes');
 var tlAddBtn=document.getElementById('tl-add-stage');
+var deleteModal=document.getElementById('delete-confirm-overlay');
+var deleteYes=document.getElementById('delete-confirm-yes');
+var deleteNo=document.getElementById('delete-confirm-no');
 var sTotal=document.getElementById('stat-total');
 var sReview=document.getElementById('stat-review');
 var sProg=document.getElementById('stat-progress');
@@ -47,12 +51,16 @@ function loadStages(){
 function saveStages(){
     try{localStorage.setItem(STGK,JSON.stringify(stages));}catch(x){}
 }
+function saveStageDates(){
+    try{localStorage.setItem(SDK,JSON.stringify(stageDates));}catch(x){}
+}
 
 function load(){
     try{so=JSON.parse(localStorage.getItem(SK))||{};}catch(e){so={};}
     try{dd=JSON.parse(localStorage.getItem(DK))||{};}catch(e){dd={};}
     try{tl=JSON.parse(localStorage.getItem(TLK))||{};}catch(e){tl={};}
     try{cat=JSON.parse(localStorage.getItem(CK))||{};}catch(e){cat={};}
+    try{stageDates=JSON.parse(localStorage.getItem(SDK))||{};}catch(e){stageDates={};}
     stages=loadStages();
     docs=POLICIES_DATA.map(function(p,i){
         return{id:i,number:p.number,title:p.title,chapter:p.chapter,
@@ -72,6 +80,16 @@ function fmtD(s){
 }
 function esc(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML;}
 function exN(s){var m=s.match(/[\d.]+/);return m?parseFloat(m[0]):0;}
+
+// Check if all timeline stages are complete for a policy
+function isTimelineComplete(policyNum){
+    var s=tl[policyNum];
+    if(!s||!stages.length)return false;
+    for(var i=0;i<stages.length;i++){
+        if(!s[i])return false;
+    }
+    return true;
+}
 
 function getF(){
     var f=docs.slice();
@@ -113,7 +131,8 @@ function render(){
         var tc=d.type==='Board Policy'?'type-bp':'type-ap';
         var tl2=d.type==='Board Policy'?'BP':'AP';
         var upd=d.lastRevised?fmtD(d.lastRevised):fmtD(d.adopted);
-        var tlBtn='<button class="tl-btn" data-action="timeline" data-id="'+d.id+'" title="View approval timeline">&#9201;</button>';
+        var allDone=isTimelineComplete(d.number);
+        var tlBtn='<button class="tl-btn'+(allDone?' tl-btn-done':'')+'" data-action="timeline" data-id="'+d.id+'" title="View approval timeline">'+(allDone?'&#10003;':'&#9201;')+'</button>';
         var catClass='cat-'+d.category;
         h+='<tr class="policy-row" data-id="'+d.id+'">'+
             '<td><span class="cell-expand" data-action="expand" data-id="'+d.id+'" title="Expand policy details">&#9654;</span> <span class="cell-title" data-action="detail" data-id="'+d.id+'">'+esc(d.title)+'</span></td>'+
@@ -127,7 +146,6 @@ function render(){
             '<td>'+tlBtn+'</td>'+
             '<td><span class="cell-date">'+upd+'</span></td>'+
             '<td><input type="date" class="due-input" data-id="'+d.id+'" value="'+(d.dueDate||'')+'"></td></tr>';
-        // Expandable dropdown row
         h+='<tr class="expand-row" id="expand-row-'+d.id+'" style="display:none;">'+
             '<td colspan="7">'+
             '<div class="expand-content">'+
@@ -179,7 +197,6 @@ function toggleExpand(id){
 function getStages(policyNum){
     var s=tl[policyNum];
     if(!s)return newStageArray();
-    // Ensure array length matches current stages count
     while(s.length<stages.length)s.push(false);
     if(s.length>stages.length)s=s.slice(0,stages.length);
     return s;
@@ -188,6 +205,9 @@ function newStageArray(){
     var arr=[];
     for(var i=0;i<stages.length;i++)arr.push(false);
     return arr;
+}
+function getStageDatesForPolicy(policyNum){
+    return stageDates[policyNum]||[];
 }
 function saveTimeline(){
     try{localStorage.setItem(TLK,JSON.stringify(tl));}catch(x){}
@@ -203,14 +223,16 @@ function openTimeline(id){
 function renderTimeline(){
     if(!currentTlDoc)return;
     var stageStates=getStages(currentTlDoc.number);
+    var dates=getStageDatesForPolicy(currentTlDoc.number);
     var numStages=stages.length;
 
-    // Build nodes dynamically
     var nodesHtml='';
     for(var i=0;i<numStages;i++){
+        var dateVal=dates[i]||'';
         nodesHtml+='<div class="tl-node'+(stageStates[i]?' done':((i===0||(i>0&&stageStates[i-1]))?' active':''))+'" data-stage="'+i+'">'+
             '<button class="tl-circle" data-stage-idx="'+i+'" aria-label="Mark stage complete">'+(stageStates[i]?'&#10003;':'')+'</button>'+
             '<input type="text" class="tl-label-input" data-stage-idx="'+i+'" value="'+esc(stages[i])+'" title="Click to edit label">'+
+            '<span class="tl-date-display">'+(dateVal?dateVal:'')+'</span>'+
             '<button class="tl-remove-btn" data-stage-idx="'+i+'" title="Remove stage">&times;</button>'+
             '</div>';
     }
@@ -232,22 +254,50 @@ function renderTimeline(){
 function handleTimelineClick(stageIdx){
     if(!currentTlDoc)return;
     var stageStates=getStages(currentTlDoc.number);
+    var dates=getStageDatesForPolicy(currentTlDoc.number);
+    // Ensure dates array is long enough
+    while(dates.length<stages.length)dates.push('');
+    var today=new Date().toISOString().split('T')[0];
+
     if(stageStates[stageIdx]){
-        for(var i=stageIdx;i<stages.length;i++)stageStates[i]=false;
+        // Unchecking: clear this and all after
+        for(var i=stageIdx;i<stages.length;i++){
+            stageStates[i]=false;
+            dates[i]='';
+        }
     }else{
-        for(var i=0;i<=stageIdx;i++)stageStates[i]=true;
+        // Checking: mark this and all before, set dates
+        for(var i=0;i<=stageIdx;i++){
+            stageStates[i]=true;
+            if(!dates[i])dates[i]=today;
+        }
     }
     tl[currentTlDoc.number]=stageStates;
+    stageDates[currentTlDoc.number]=dates;
     saveTimeline();
+    saveStageDates();
+
+    // Determine status based on checked count
+    var checkedCount=0;
+    for(var k=0;k<stages.length;k++){if(stageStates[k])checkedCount++;}
+    var newStatus;
+    if(checkedCount===stages.length){
+        newStatus='completed';
+    }else if(checkedCount>0){
+        newStatus='in-progress';
+    }else{
+        newStatus='needs-review';
+    }
+    currentTlDoc.status=newStatus;
+    so[currentTlDoc.number]=newStatus;
+    try{localStorage.setItem(SK,JSON.stringify(so));}catch(x){}
+
     renderTimeline();
     render();
 }
 function addStage(){
-    var name=prompt('Enter label for the new stage:');
-    if(!name||!name.trim())return;
-    stages.push(name.trim());
+    stages.push('');
     saveStages();
-    // Extend all existing timeline data
     for(var key in tl){
         if(tl.hasOwnProperty(key)){
             tl[key].push(false);
@@ -255,25 +305,51 @@ function addStage(){
     }
     saveTimeline();
     renderTimeline();
+    var inputs=tlNodes.querySelectorAll('.tl-label-input');
+    if(inputs.length)inputs[inputs.length-1].focus();
 }
-function removeStage(idx){
-    if(stages.length<=1){alert('Must have at least one stage.');return;}
-    if(!confirm('Remove stage "'+stages[idx]+'"?'))return;
+
+// --- Delete confirmation popup ---
+function showDeleteConfirm(idx){
+    pendingRemoveIdx=idx;
+    deleteModal.classList.add('active');
+}
+function hideDeleteConfirm(){
+    pendingRemoveIdx=null;
+    deleteModal.classList.remove('active');
+}
+function confirmRemoveStage(){
+    if(pendingRemoveIdx===null)return;
+    var idx=pendingRemoveIdx;
+    hideDeleteConfirm();
     stages.splice(idx,1);
     saveStages();
-    // Remove from all timeline data
     for(var key in tl){
         if(tl.hasOwnProperty(key)&&tl[key].length>idx){
             tl[key].splice(idx,1);
         }
     }
+    // Remove date entries too
+    for(var key2 in stageDates){
+        if(stageDates.hasOwnProperty(key2)&&stageDates[key2].length>idx){
+            stageDates[key2].splice(idx,1);
+        }
+    }
     saveTimeline();
+    saveStageDates();
     renderTimeline();
 }
+
 function renameStage(idx,newName){
-    if(!newName||!newName.trim())return;
-    stages[idx]=newName.trim();
+    stages[idx]=(newName||'').trim();
     saveStages();
+}
+
+function setStageDate(policyNum,idx,dateVal){
+    if(!stageDates[policyNum])stageDates[policyNum]=[];
+    while(stageDates[policyNum].length<=idx)stageDates[policyNum].push('');
+    stageDates[policyNum][idx]=dateVal;
+    saveStageDates();
 }
 
 function init(){
@@ -283,7 +359,6 @@ function init(){
     searchIn.addEventListener('input',function(){query=searchIn.value;render();});
     sortSel.addEventListener('change',function(){sort=sortSel.value;render();});
 
-    // Chapter sidebar nav
     chapterNav.addEventListener('click',function(e){
         var btn=e.target.closest('.nav-btn');if(!btn)return;
         document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
@@ -293,14 +368,12 @@ function init(){
         sidebar.classList.remove('open');
     });
 
-    // Category filter tabs
     filterNav.addEventListener('click',function(e){
         var t=e.target.closest('.tab');if(!t)return;
         document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
         t.classList.add('active');filter=t.dataset.filter;render();
     });
 
-    // Table interactions
     tbody.addEventListener('click',function(e){
         var expandEl=e.target.closest('[data-action="expand"]');
         if(expandEl){e.preventDefault();toggleExpand(parseInt(expandEl.dataset.id,10));return;}
@@ -322,15 +395,12 @@ function init(){
         }
     });
 
-    // Detail modal
     dClose.addEventListener('click',function(){dOverlay.classList.remove('active');});
     dOverlay.addEventListener('click',function(e){if(e.target===dOverlay)dOverlay.classList.remove('active');});
 
-    // Timeline modal
     tlClose.addEventListener('click',function(){tlOverlay.classList.remove('active');currentTlDoc=null;});
     tlOverlay.addEventListener('click',function(e){if(e.target===tlOverlay){tlOverlay.classList.remove('active');currentTlDoc=null;}});
 
-    // Timeline node interactions (delegated)
     tlNodes.addEventListener('click',function(e){
         var circle=e.target.closest('.tl-circle');
         if(circle){
@@ -341,7 +411,8 @@ function init(){
         var removeBtn=e.target.closest('.tl-remove-btn');
         if(removeBtn){
             var ridx=parseInt(removeBtn.dataset.stageIdx,10);
-            removeStage(ridx);
+            if(stages.length<=1)return;
+            showDeleteConfirm(ridx);
             return;
         }
     });
@@ -352,10 +423,21 @@ function init(){
         }
     });
 
-    // Add stage button
     tlAddBtn.addEventListener('click',addStage);
 
-    document.addEventListener('keydown',function(e){if(e.key==='Escape'){dOverlay.classList.remove('active');tlOverlay.classList.remove('active');currentTlDoc=null;}});
+    // Delete confirm modal
+    deleteYes.addEventListener('click',confirmRemoveStage);
+    deleteNo.addEventListener('click',hideDeleteConfirm);
+    deleteModal.addEventListener('click',function(e){if(e.target===deleteModal)hideDeleteConfirm();});
+
+    document.addEventListener('keydown',function(e){
+        if(e.key==='Escape'){
+            dOverlay.classList.remove('active');
+            tlOverlay.classList.remove('active');
+            hideDeleteConfirm();
+            currentTlDoc=null;
+        }
+    });
 }
 init();
 })();

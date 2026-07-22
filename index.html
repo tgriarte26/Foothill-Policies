@@ -26,8 +26,6 @@
                 <button class="nav-btn" data-chapter="Chapter 6 - Business and Fiscal Affairs">6 &mdash; Business &amp; Fiscal</button>
                 <button class="nav-btn" data-chapter="Chapter 7 - Human Resources">7 &mdash; Human Resources</button>
             </nav>
-            <div class="sidebar-label" style="margin-top:auto;">AI Assistant</div>
-            <button class="chat-toggle-btn" id="chat-toggle">&#9993; Ask about policies</button>
         </aside>
 
         <!-- Main -->
@@ -117,24 +115,21 @@
         </div>
     </div>
 
-    <!-- Chatbot Panel -->
-    <div class="chat-panel" id="chat-panel">
-        <div class="chat-header">
-            <span>&#9993; Policy Assistant</span>
-            <button class="chat-close" id="chat-close">&times;</button>
-        </div>
-        <div class="chat-messages" id="chat-messages">
-            <div class="chat-msg bot">Hi! Ask me anything about Foothill-De Anza board policies or administrative procedures. I'll find the relevant policy info for you.</div>
-        </div>
-        <div class="chat-input-area">
-            <input type="text" id="chat-input" class="chat-input" placeholder="Ask a policy question...">
-            <button class="chat-send" id="chat-send">&#10148;</button>
+    <!-- Delete Confirmation Modal -->
+    <div class="overlay" id="delete-confirm-overlay">
+        <div class="modal modal-sm">
+            <div class="modal-body delete-confirm-body">
+                <p class="delete-confirm-text">Are you sure you would like to delete this?</p>
+                <div class="delete-confirm-actions">
+                    <button class="delete-confirm-btn delete-yes" id="delete-confirm-yes">Yes, Delete</button>
+                    <button class="delete-confirm-btn delete-no" id="delete-confirm-no">Cancel</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <script src="policies-data.js"></script>
     <script src="policies-content.js"></script>
     <script src="app.js"></script>
-    <script src="chatbot.js"></script>
 </body>
 </html>
