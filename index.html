@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FHDA Policy Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-head">
+                <span class="sidebar-logo">FHDA</span>
+                <span class="sidebar-title">Policy Tracker</span>
+            </div>
+            <div class="sidebar-label">Chapters</div>
+            <nav class="sidebar-nav" id="chapter-nav">
+                <button class="nav-btn active" data-chapter="all">All Chapters</button>
+                <button class="nav-btn" data-chapter="Chapter 1 - The District">1 &mdash; The District</button>
+                <button class="nav-btn" data-chapter="Chapter 2 - Board of Trustees">2 &mdash; Board of Trustees</button>
+                <button class="nav-btn" data-chapter="Chapter 3 - General Institution">3 &mdash; General Institution</button>
+                <button class="nav-btn" data-chapter="Chapter 4 - Academic Affairs">4 &mdash; Academic Affairs</button>
+                <button class="nav-btn" data-chapter="Chapter 5 - Student Services">5 &mdash; Student Services</button>
+                <button class="nav-btn" data-chapter="Chapter 6 - Business and Fiscal Affairs">6 &mdash; Business &amp; Fiscal</button>
+                <button class="nav-btn" data-chapter="Chapter 7 - Human Resources">7 &mdash; Human Resources</button>
+            </nav>
+            <div class="sidebar-label" style="margin-top:auto;">AI Assistant</div>
+            <button class="chat-toggle-btn" id="chat-toggle">&#9993; Ask about policies</button>
+        </aside>
+
+        <!-- Main -->
+        <main class="main">
+            <header class="topbar">
+                <button class="menu-btn" id="menu-btn" aria-label="Toggle sidebar">&#9776;</button>
+                <h1 class="topbar-title">Board Policy &amp; Administrative Procedure Tracker</h1>
+                <button class="theme-btn" id="theme-toggle" aria-label="Toggle theme">
+                    <span class="t-sun">&#9788;</span><span class="t-moon">&#9790;</span>
+                </button>
+            </header>
+
+            <div class="metrics">
+                <div class="metric"><span class="metric-val" id="stat-total">0</span><span class="metric-lbl">Total</span></div>
+                <div class="metric"><span class="metric-val accent-yellow" id="stat-review">0</span><span class="metric-lbl">Review</span></div>
+                <div class="metric"><span class="metric-val accent-blue" id="stat-progress">0</span><span class="metric-lbl">In Progress</span></div>
+                <div class="metric"><span class="metric-val accent-green" id="stat-completed">0</span><span class="metric-lbl">Done</span></div>
+            </div>
+
+            <div class="bar">
+                <input type="text" id="search-input" class="search" placeholder="Search policies...">
+                <select id="sort-select" class="sort">
+                    <option value="number-asc">Number &uarr;</option>
+                    <option value="number-desc">Number &darr;</option>
+                    <option value="title-asc">A &rarr; Z</option>
+                    <option value="title-desc">Z &rarr; A</option>
+                    <option value="revised-desc">Newest</option>
+                    <option value="revised-asc">Oldest</option>
+                    <option value="status">Status</option>
+                </select>
+            </div>
+
+            <nav class="tabs" id="filter-nav">
+                <button class="tab active" data-filter="all">All <span id="count-all">0</span></button>
+                <button class="tab" data-filter="needs-review">Review <span id="count-needs-review">0</span></button>
+                <button class="tab" data-filter="in-progress">Progress <span id="count-in-progress">0</span></button>
+                <button class="tab" data-filter="approved">Approved <span id="count-approved">0</span></button>
+                <button class="tab" data-filter="completed">Done <span id="count-completed">0</span></button>
+                <button class="tab" data-filter="archived">Archived <span id="count-archived">0</span></button>
+            </nav>
+
+            <section class="table-wrap" id="table-section">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Policy Name</th>
+                            <th>Number</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Updated</th>
+                            <th>Due Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="documents-tbody"></tbody>
+                </table>
+            </section>
+            <div class="empty" id="empty-state" style="display:none;"><p>No results.</p></div>
+        </main>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="overlay" id="detail-modal-overlay">
+        <div class="modal">
+            <div class="modal-bar"><h2 id="detail-modal-title">Details</h2><button class="modal-x" id="detail-modal-close">&times;</button></div>
+            <div class="modal-body" id="detail-modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Timeline Modal -->
+    <div class="overlay" id="timeline-overlay">
+        <div class="modal modal-wide">
+            <div class="modal-bar">
+                <h2 id="timeline-title">Approval Timeline</h2>
+                <button class="modal-x" id="timeline-close">&times;</button>
+            </div>
+            <div class="modal-body" id="timeline-body">
+                <p class="timeline-sub" id="timeline-sub"></p>
+                <div class="timeline">
+                    <div class="timeline-track"></div>
+                    <div class="timeline-progress" id="timeline-progress"></div>
+                    <div class="timeline-nodes">
+                        <div class="tl-node" data-stage="0">
+                            <button class="tl-circle" id="tl-stage-0" aria-label="Mark stage complete"></button>
+                            <span class="tl-label">Chancellor's<br>1st Read</span>
+                        </div>
+                        <div class="tl-node" data-stage="1">
+                            <button class="tl-circle" id="tl-stage-1" aria-label="Mark stage complete"></button>
+                            <span class="tl-label">Chancellor's<br>2nd Read</span>
+                        </div>
+                        <div class="tl-node" data-stage="2">
+                            <button class="tl-circle" id="tl-stage-2" aria-label="Mark stage complete"></button>
+                            <span class="tl-label">Board of Trustees<br>1st Read</span>
+                        </div>
+                        <div class="tl-node" data-stage="3">
+                            <button class="tl-circle" id="tl-stage-3" aria-label="Mark stage complete"></button>
+                            <span class="tl-label">Board of Trustees<br>2nd Read</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="timeline-status" id="timeline-status"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chatbot Panel -->
+    <div class="chat-panel" id="chat-panel">
+        <div class="chat-header">
+            <span>&#9993; Policy Assistant</span>
+            <button class="chat-close" id="chat-close">&times;</button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="chat-msg bot">Hi! Ask me anything about Foothill-De Anza board policies or administrative procedures. I'll find the relevant policy info for you.</div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" class="chat-input" placeholder="Ask a policy question...">
+            <button class="chat-send" id="chat-send">&#10148;</button>
+        </div>
+    </div>
+
+    <script src="policies-data.js"></script>
+    <script src="policies-content.js"></script>
+    <script src="app.js"></script>
+    <script src="chatbot.js"></script>
+</body>
+</html>
