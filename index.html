@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FHDA Policy Tracker</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -17,16 +17,21 @@
             </div>
             <div class="sidebar-label">Chapters</div>
             <nav class="sidebar-nav" id="chapter-nav">
-                <button class="nav-btn active" data-chapter="all">All Chapters</button>
-                <button class="nav-btn" data-chapter="Chapter 1 - The District">1 &mdash; The District</button>
-                <button class="nav-btn" data-chapter="Chapter 2 - Board of Trustees">2 &mdash; Board of Trustees</button>
-                <button class="nav-btn" data-chapter="Chapter 3 - General Institution">3 &mdash; General Institution</button>
-                <button class="nav-btn" data-chapter="Chapter 4 - Academic Affairs">4 &mdash; Academic Affairs</button>
-                <button class="nav-btn" data-chapter="Chapter 5 - Student Services">5 &mdash; Student Services</button>
-                <button class="nav-btn" data-chapter="Chapter 6 - Business and Fiscal Affairs">6 &mdash; Business &amp; Fiscal</button>
-                <button class="nav-btn" data-chapter="Chapter 7 - Human Resources">7 &mdash; Human Resources</button>
+                <button class="nav-btn active" data-chapter="all"><span class="ch-num">&#9776;</span> All Chapters</button>
+                <button class="nav-btn" data-chapter="Chapter 1 - The District"><span class="ch-num">1</span> The District</button>
+                <button class="nav-btn" data-chapter="Chapter 2 - Board of Trustees"><span class="ch-num">2</span> Board of Trustees</button>
+                <button class="nav-btn" data-chapter="Chapter 3 - General Institution"><span class="ch-num">3</span> General Institution</button>
+                <button class="nav-btn" data-chapter="Chapter 4 - Academic Affairs"><span class="ch-num">4</span> Academic Affairs</button>
+                <button class="nav-btn" data-chapter="Chapter 5 - Student Services"><span class="ch-num">5</span> Student Services</button>
+                <button class="nav-btn" data-chapter="Chapter 6 - Business and Fiscal Affairs"><span class="ch-num">6</span> Business &amp; Fiscal</button>
+                <button class="nav-btn" data-chapter="Chapter 7 - Human Resources"><span class="ch-num">7</span> Human Resources</button>
             </nav>
-            <div class="sidebar-label" style="margin-top:auto;">AI Assistant</div>
+            <div class="sidebar-label" style="margin-top:auto;">Tools</div>
+            <button class="nav-btn history-btn" id="history-toggle">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle"><path d="M1 7a6 6 0 1 1 1.5 4"/><path d="M7 4v3l2 1"/><path d="M1 7H3L1.5 5"/></svg>
+                Review History
+            </button>
+            <div class="sidebar-label">AI Assistant</div>
             <button class="chat-toggle-btn" id="chat-toggle">&#9993; Ask about policies</button>
         </aside>
 
@@ -41,10 +46,42 @@
             </header>
 
             <div class="metrics">
-                <div class="metric"><span class="metric-val" id="stat-total">0</span><span class="metric-lbl">Total</span></div>
-                <div class="metric"><span class="metric-val accent-yellow" id="stat-review">0</span><span class="metric-lbl">Review</span></div>
-                <div class="metric"><span class="metric-val accent-blue" id="stat-progress">0</span><span class="metric-lbl">In Progress</span></div>
-                <div class="metric"><span class="metric-val accent-green" id="stat-completed">0</span><span class="metric-lbl">Done</span></div>
+                <div class="metric-card">
+                    <div class="metric-icon mi-total">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M7 7h6M7 10h6M7 13h4"/></svg>
+                    </div>
+                    <div class="metric-info">
+                        <span class="metric-val" id="stat-total">0</span>
+                        <span class="metric-lbl">Total Policies</span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon mi-review">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l2 2"/></svg>
+                    </div>
+                    <div class="metric-info">
+                        <span class="metric-val accent-yellow" id="stat-review">0</span>
+                        <span class="metric-lbl">Needs Review</span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon mi-progress">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 3a7 7 0 1 1-7 7"/><path d="M10 3v4l-3 2"/></svg>
+                    </div>
+                    <div class="metric-info">
+                        <span class="metric-val accent-blue" id="stat-progress">0</span>
+                        <span class="metric-lbl">In Progress</span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon mi-done">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="7"/><path d="M7 10l2 2 4-4"/></svg>
+                    </div>
+                    <div class="metric-info">
+                        <span class="metric-val accent-green" id="stat-completed">0</span>
+                        <span class="metric-lbl">Completed</span>
+                    </div>
+                </div>
             </div>
 
             <div class="bar">
@@ -71,13 +108,12 @@
 
             <section class="table-wrap" id="table-section">
                 <table>
-                    <thead>
+                    <thead id="table-head">
                         <tr>
                             <th>Policy Name</th>
                             <th>Number</th>
                             <th>Type</th>
                             <th>Status</th>
-                            <th>Timeline</th>
                             <th>Updated</th>
                             <th>Due Date</th>
                         </tr>
@@ -129,6 +165,22 @@
                     </div>
                 </div>
                 <div class="timeline-status" id="timeline-status"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="overlay" id="history-overlay">
+        <div class="modal modal-wide">
+            <div class="modal-bar">
+                <h2>Review History</h2>
+                <button class="modal-x" id="history-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="history-desc">Policies that have been reviewed or had their status changed.</p>
+                <div class="history-list" id="history-list">
+                    <p class="history-empty">No review history yet. Change a policy status to start tracking.</p>
+                </div>
             </div>
         </div>
     </div>

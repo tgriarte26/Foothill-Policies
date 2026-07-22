@@ -1,9 +1,9 @@
 (function(){
 'use strict';
-var SK='fhda_st',TK='fhda_th',DK='fhda_du',TLK='fhda_tl';
+var SK='fhda_st',TK='fhda_th',DK='fhda_du',TLK='fhda_tl',HK='fhda_hist';
 var SL={'needs-review':'Needs Review','in-progress':'In Progress','approved':'Approved','completed':'Completed','archived':'Archived'};
 var STAGES=['Chancellor\'s 1st Read','Chancellor\'s 2nd Read','Board of Trustees 1st Read','Board of Trustees 2nd Read'];
-var docs=[],so={},dd={},tl={},filter='all',chapter='all',sort='number-asc',query='';
+var docs=[],so={},dd={},tl={},history=[],filter='all',chapter='all',sort='number-asc',query='';
 var currentTlDoc=null;
 
 var tbody=document.getElementById('documents-tbody');
@@ -26,6 +26,10 @@ var tlSub=document.getElementById('timeline-sub');
 var tlProgress=document.getElementById('timeline-progress');
 var tlStatus=document.getElementById('timeline-status');
 var tlClose=document.getElementById('timeline-close');
+var histToggle=document.getElementById('history-toggle');
+var histOverlay=document.getElementById('history-overlay');
+var histClose=document.getElementById('history-close');
+var histList=document.getElementById('history-list');
 var sTotal=document.getElementById('stat-total');
 var sReview=document.getElementById('stat-review');
 var sProg=document.getElementById('stat-progress');
@@ -44,7 +48,7 @@ function load(){
     try{so=JSON.parse(localStorage.getItem(SK))||{};}catch(e){so={};}
     try{dd=JSON.parse(localStorage.getItem(DK))||{};}catch(e){dd={};}
     try{tl=JSON.parse(localStorage.getItem(TLK))||{};}catch(e){tl={};}
-    docs=POLICIES_DATA.map(function(p,i){
+    try{history=JSON.parse(localStorage.getItem(HK))||[];}catch(e){history=[];}    docs=POLICIES_DATA.map(function(p,i){
         return{id:i,number:p.number,title:p.title,chapter:p.chapter,
             type:p.type||(p.number.indexOf('AP')===0?'Administrative Procedure':'Board Policy'),
             status:so[p.number]||'needs-review',adopted:p.adopted||'',lastRevised:p.lastRevised||'',
@@ -98,6 +102,15 @@ function render(){
     if(!f.length){tbody.innerHTML='';empty.style.display='block';tableSection.style.display='none';return;}
     empty.style.display='none';tableSection.style.display='block';
 
+    // Show timeline column only when filtering to in-progress
+    var showTl=(filter==='in-progress');
+    var thead=document.getElementById('table-head');
+    if(showTl){
+        thead.innerHTML='<tr><th>Policy Name</th><th>Number</th><th>Type</th><th>Status</th><th>Timeline</th><th>Updated</th><th>Due Date</th></tr>';
+    }else{
+        thead.innerHTML='<tr><th>Policy Name</th><th>Number</th><th>Type</th><th>Status</th><th>Updated</th><th>Due Date</th></tr>';
+    }
+
     var h='';
     for(var i=0;i<f.length;i++){
         var d=f[i];
@@ -105,7 +118,7 @@ function render(){
         var tl2=d.type==='Board Policy'?'BP':'AP';
         var upd=d.lastRevised?fmtD(d.lastRevised):fmtD(d.adopted);
         var tlBtn='';
-        if(d.status==='needs-review'){
+        if(showTl&&d.status==='in-progress'){
             var stg=tl[d.number]||[false,false,false,false];
             var allDone=stg[0]&&stg[1]&&stg[2]&&stg[3];
             tlBtn='<button class="tl-btn'+(allDone?' tl-btn-done':'')+'" data-action="timeline" data-id="'+d.id+'" title="View approval timeline">'+(allDone?'&#10003;':'&#9201;')+'</button>';
@@ -120,7 +133,7 @@ function render(){
             '<option value="completed"'+(d.status==='completed'?' selected':'')+'>Done</option>'+
             '<option value="archived"'+(d.status==='archived'?' selected':'')+'>Archived</option>'+
             '</select></td>'+
-            '<td>'+tlBtn+'</td>'+
+            (showTl?'<td>'+tlBtn+'</td>':'')+
             '<td><span class="cell-date">'+upd+'</span></td>'+
             '<td><input type="date" class="due-input" data-id="'+d.id+'" value="'+(d.dueDate||'')+'"></td></tr>';
     }
@@ -206,6 +219,38 @@ function handleTimelineClick(stageIdx){
     render();
 }
 
+// --- History ---
+function openHistory(){
+    renderHistory();
+    histOverlay.classList.add('active');
+}
+function renderHistory(){
+    if(!history.length){
+        histList.innerHTML='<p class="history-empty">No review history yet. Change a policy status to start tracking.</p>';
+        return;
+    }
+    var h='';
+    for(var i=0;i<Math.min(history.length,50);i++){
+        var e=history[i];
+        var d=new Date(e.date);
+        var dateStr=d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+        var timeStr=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+        h+='<div class="history-item">'+
+            '<div class="history-item-left">'+
+            '<span class="history-num">'+esc(e.number)+'</span>'+
+            '<span class="history-title">'+esc(e.title)+'</span>'+
+            '</div>'+
+            '<div class="history-item-right">'+
+            '<span class="status-badge '+e.from+'">'+SL[e.from]+'</span>'+
+            '<span class="history-arrow">&rarr;</span>'+
+            '<span class="status-badge '+e.to+'">'+SL[e.to]+'</span>'+
+            '<span class="history-date">'+dateStr+' '+timeStr+'</span>'+
+            '</div>'+
+            '</div>';
+    }
+    histList.innerHTML=h;
+}
+
 function init(){
     initTheme();load();render();
     themeBtn.addEventListener('click',toggleTheme);
@@ -241,8 +286,14 @@ function init(){
     tbody.addEventListener('change',function(e){
         if(e.target.classList.contains('status-sel')){
             var id=parseInt(e.target.dataset.id,10),d=docs[id];
+            var oldStatus=d.status;
             d.status=e.target.value;so[d.number]=e.target.value;
-            try{localStorage.setItem(SK,JSON.stringify(so));}catch(x){}render();
+            try{localStorage.setItem(SK,JSON.stringify(so));}catch(x){}
+            // Log to history
+            history.unshift({number:d.number,title:d.title,from:oldStatus,to:e.target.value,date:new Date().toISOString()});
+            if(history.length>200)history=history.slice(0,200);
+            try{localStorage.setItem(HK,JSON.stringify(history));}catch(x){}
+            render();
         }
         if(e.target.classList.contains('due-input')){
             var id2=parseInt(e.target.dataset.id,10),d2=docs[id2];
@@ -265,7 +316,12 @@ function init(){
         })(s);
     }
 
-    document.addEventListener('keydown',function(e){if(e.key==='Escape'){dOverlay.classList.remove('active');tlOverlay.classList.remove('active');currentTlDoc=null;}});
+    document.addEventListener('keydown',function(e){if(e.key==='Escape'){dOverlay.classList.remove('active');tlOverlay.classList.remove('active');histOverlay.classList.remove('active');currentTlDoc=null;}});
+
+    // History
+    histToggle.addEventListener('click',openHistory);
+    histClose.addEventListener('click',function(){histOverlay.classList.remove('active');});
+    histOverlay.addEventListener('click',function(e){if(e.target===histOverlay)histOverlay.classList.remove('active');});
 }
 init();
 })();
