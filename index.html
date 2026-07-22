@@ -62,11 +62,9 @@
 
             <nav class="tabs" id="filter-nav">
                 <button class="tab active" data-filter="all">All <span id="count-all">0</span></button>
-                <button class="tab" data-filter="needs-review">Review <span id="count-needs-review">0</span></button>
-                <button class="tab" data-filter="in-progress">Progress <span id="count-in-progress">0</span></button>
-                <button class="tab" data-filter="approved">Approved <span id="count-approved">0</span></button>
-                <button class="tab" data-filter="completed">Done <span id="count-completed">0</span></button>
-                <button class="tab" data-filter="archived">Archived <span id="count-archived">0</span></button>
+                <button class="tab" data-filter="legally-required">Legally Required <span id="count-legally-required">0</span></button>
+                <button class="tab" data-filter="legally-recommended">Legally Recommended <span id="count-legally-recommended">0</span></button>
+                <button class="tab" data-filter="optional">Optional <span id="count-optional">0</span></button>
             </nav>
 
             <section class="table-wrap" id="table-section">
@@ -76,7 +74,7 @@
                             <th>Policy Name</th>
                             <th>Number</th>
                             <th>Type</th>
-                            <th>Status</th>
+                            <th>Category</th>
                             <th>Timeline</th>
                             <th>Updated</th>
                             <th>Due Date</th>
@@ -109,26 +107,12 @@
                 <div class="timeline">
                     <div class="timeline-track"></div>
                     <div class="timeline-progress" id="timeline-progress"></div>
-                    <div class="timeline-nodes">
-                        <div class="tl-node" data-stage="0">
-                            <button class="tl-circle" id="tl-stage-0" aria-label="Mark stage complete"></button>
-                            <span class="tl-label">Chancellor's<br>1st Read</span>
-                        </div>
-                        <div class="tl-node" data-stage="1">
-                            <button class="tl-circle" id="tl-stage-1" aria-label="Mark stage complete"></button>
-                            <span class="tl-label">Chancellor's<br>2nd Read</span>
-                        </div>
-                        <div class="tl-node" data-stage="2">
-                            <button class="tl-circle" id="tl-stage-2" aria-label="Mark stage complete"></button>
-                            <span class="tl-label">Board of Trustees<br>1st Read</span>
-                        </div>
-                        <div class="tl-node" data-stage="3">
-                            <button class="tl-circle" id="tl-stage-3" aria-label="Mark stage complete"></button>
-                            <span class="tl-label">Board of Trustees<br>2nd Read</span>
-                        </div>
-                    </div>
+                    <div class="timeline-nodes" id="timeline-nodes"></div>
                 </div>
                 <div class="timeline-status" id="timeline-status"></div>
+                <div class="timeline-actions">
+                    <button class="tl-add-btn" id="tl-add-stage">+ Add Stage</button>
+                </div>
             </div>
         </div>
     </div>
