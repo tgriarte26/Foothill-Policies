@@ -104,8 +104,13 @@ function render(){
         var tc=d.type==='Board Policy'?'type-bp':'type-ap';
         var tl2=d.type==='Board Policy'?'BP':'AP';
         var upd=d.lastRevised?fmtD(d.lastRevised):fmtD(d.adopted);
-        var tlBtn=d.status==='needs-review'?'<button class="tl-btn" data-action="timeline" data-id="'+d.id+'" title="View approval timeline">&#9201;</button>':'';
-        h+='<tr><td><span class="cell-title" data-action="detail" data-id="'+d.id+'">'+esc(d.title)+'</span> '+tlBtn+'</td>'+
+        var tlBtn='';
+        if(d.status==='needs-review'){
+            var stg=tl[d.number]||[false,false,false,false];
+            var allDone=stg[0]&&stg[1]&&stg[2]&&stg[3];
+            tlBtn='<button class="tl-btn'+(allDone?' tl-btn-done':'')+'" data-action="timeline" data-id="'+d.id+'" title="View approval timeline">'+(allDone?'&#10003;':'&#9201;')+'</button>';
+        }
+        h+='<tr><td><span class="cell-title" data-action="detail" data-id="'+d.id+'">'+esc(d.title)+'</span></td>'+
             '<td><span class="cell-num">'+esc(d.number)+'</span></td>'+
             '<td><span class="cell-type '+tc+'">'+tl2+'</span></td>'+
             '<td><select class="status-sel '+d.status+'" data-id="'+d.id+'">'+
@@ -115,6 +120,7 @@ function render(){
             '<option value="completed"'+(d.status==='completed'?' selected':'')+'>Done</option>'+
             '<option value="archived"'+(d.status==='archived'?' selected':'')+'>Archived</option>'+
             '</select></td>'+
+            '<td>'+tlBtn+'</td>'+
             '<td><span class="cell-date">'+upd+'</span></td>'+
             '<td><input type="date" class="due-input" data-id="'+d.id+'" value="'+(d.dueDate||'')+'"></td></tr>';
     }
@@ -197,6 +203,7 @@ function handleTimelineClick(stageIdx){
     tl[currentTlDoc.number]=stages;
     saveTimeline();
     renderTimeline();
+    render();
 }
 
 function init(){
