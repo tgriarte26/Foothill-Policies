@@ -449,6 +449,7 @@ tbody tr:last-child td{border-bottom:none}
 }
 .cat-sel:focus{outline:none;box-shadow:0 0 0 2px var(--accent-bg)}
 .cat-sel.cat-legally-required{background:rgba(248,113,113,.12);color:var(--red)}
+.cat-sel.cat-legally-revised{background:rgba(167,139,250,.12);color:var(--accent)}
 .cat-sel.cat-legally-recommended{background:rgba(251,191,36,.12);color:var(--yellow)}
 .cat-sel.cat-optional{background:rgba(96,165,250,.12);color:var(--blue)}
 
@@ -878,6 +879,33 @@ tbody tr:last-child td{border-bottom:none}
     border-top:1px solid var(--border-accent);
 }
 
+.expand-section{
+    background:var(--card);
+    border:1px solid var(--border-accent);
+    border-radius:var(--radius);
+    padding:1rem;
+    display:flex;
+    flex-direction:column;
+}
+
+.expand-section-title{
+    font-size:.72rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--accent);
+    margin-bottom:.75rem;
+    padding-bottom:.5rem;
+    border-bottom:1px solid var(--border-accent);
+}
+
+.expand-section-body{
+    font-size:.8rem;
+    line-height:1.6;
+    color:var(--text);
+    flex:1;
+}
+
 @media(max-width:768px){
     .expand-content{grid-template-columns:1fr}
 }
@@ -1274,4 +1302,101 @@ tbody tr:last-child td{border-bottom:none}
     font-size:.82rem;
     font-weight:500;
     color:var(--accent);
+}
+
+/* === EDIT POLICY BUTTON === */
+.edit-policy-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:28px;height:28px;
+    border:1px solid var(--border-accent);
+    border-radius:6px;
+    background:transparent;
+    color:var(--dim);
+    font-size:.85rem;
+    cursor:pointer;
+    transition:color .12s,border-color .12s,background .12s;
+}
+.edit-policy-btn:hover{
+    color:var(--accent);
+    border-color:var(--accent);
+    background:var(--accent-bg);
+}
+
+/* === POLICY EDITOR MODAL === */
+.policy-editor-body{
+    display:flex;
+    flex-direction:column;
+    gap:.75rem;
+}
+
+.editor-note{
+    font-size:.72rem;
+    color:var(--dim);
+    background:var(--accent-bg);
+    border:1px solid rgba(167,139,250,.15);
+    border-radius:6px;
+    padding:.5rem .75rem;
+}
+
+.policy-editor-textarea{
+    min-height:350px;
+    padding:.85rem 1rem;
+    background:var(--bg);
+    border:1px solid var(--border-accent);
+    border-radius:8px;
+    color:var(--text);
+    font-family:'JetBrains Mono',monospace;
+    font-size:.78rem;
+    line-height:1.7;
+    resize:vertical;
+    outline:none;
+    transition:border-color .15s;
+}
+.policy-editor-textarea:focus{border-color:var(--accent)}
+
+.policy-editor-download{
+    align-self:flex-end;
+    padding:.5rem 1.25rem;
+    background:var(--accent);
+    border:none;
+    border-radius:6px;
+    color:#fff;
+    font-family:inherit;
+    font-size:.8rem;
+    font-weight:600;
+    cursor:pointer;
+    transition:opacity .12s;
+}
+.policy-editor-download:hover{opacity:.8}
+
+/* === COMPACT UPLOAD (after files loaded) === */
+.upload-section.compact .upload-box{
+    padding:.75rem 1.25rem;
+    border-width:1px;
+}
+.upload-section.compact .upload-content{
+    flex-direction:row;
+    gap:.75rem;
+}
+.upload-section.compact .upload-content svg{width:18px;height:18px}
+.upload-section.compact .upload-title{font-size:.8rem}
+.upload-section.compact .upload-sub{display:none}
+.upload-section.compact .upload-btn{margin-top:0;padding:.35rem .85rem;font-size:.72rem}
+
+/* Fix text alignment in expand sections */
+.expand-section-body .policy-text,
+.expand-section-body .legal-update-text,
+.expand-section-body .placeholder-text{
+    text-align:left;
+    word-wrap:break-word;
+}
+
+.expand-section-body .policy-text{
+    font-size:.78rem;
+    line-height:1.7;
+    max-height:350px;
+    overflow-y:auto;
+    padding-right:.5rem;
 }

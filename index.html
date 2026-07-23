@@ -49,11 +49,11 @@
             <!-- Upload Section -->
             <section class="upload-section" id="upload-section">
                 <div class="upload-box" id="upload-box">
-                    <input type="file" id="file-upload" accept=".docx,.txt,.pdf" hidden>
+                    <input type="file" id="file-upload" accept=".docx,.txt,.pdf" multiple hidden>
                     <div class="upload-content" id="upload-content">
-                        <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 20V8m0 0l-5 5m5-5l5 5M6 24h20"/></svg>
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                         <p class="upload-title">Upload Legal Updates File</p>
-                        <p class="upload-sub">Drop a .docx or .txt file with policy updates (e.g., CCLC Update 47)</p>
+                        <p class="upload-sub">Drop .docx or .txt files with policy updates — select multiple to combine</p>
                         <button class="upload-btn" id="upload-btn">Choose File</button>
                     </div>
                     <div class="upload-status" id="upload-status" style="display:none;">
@@ -79,6 +79,7 @@
             <nav class="tabs" id="filter-nav">
                 <button class="tab active" data-filter="all">All <span id="count-all">0</span></button>
                 <button class="tab" data-filter="legally-required">Legally Required <span id="count-legally-required">0</span></button>
+                <button class="tab" data-filter="legally-revised">Legally Revised <span id="count-legally-revised">0</span></button>
                 <button class="tab" data-filter="legally-recommended">Legally Recommended <span id="count-legally-recommended">0</span></button>
                 <button class="tab" data-filter="optional">Optional <span id="count-optional">0</span></button>
             </nav>
@@ -94,6 +95,7 @@
                             <th>Timeline</th>
                             <th>Updated</th>
                             <th>Due Date</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody id="documents-tbody"></tbody>
@@ -142,6 +144,21 @@
                     <button class="delete-confirm-btn delete-yes" id="delete-confirm-yes">Yes, Delete</button>
                     <button class="delete-confirm-btn delete-no" id="delete-confirm-no">Cancel</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Policy Editor Modal -->
+    <div class="overlay" id="policy-editor-overlay">
+        <div class="modal modal-wide">
+            <div class="modal-bar">
+                <h2 id="policy-editor-title">Edit Policy</h2>
+                <button class="modal-x" id="policy-editor-close">&times;</button>
+            </div>
+            <div class="modal-body policy-editor-body">
+                <p class="editor-note">Edit the policy text below. Changes are for your draft only and will NOT modify the current policy in the tracker.</p>
+                <textarea class="policy-editor-textarea" id="policy-editor-textarea" placeholder="Policy text will appear here..."></textarea>
+                <button class="policy-editor-download" id="policy-editor-download">Download as PDF</button>
             </div>
         </div>
     </div>
