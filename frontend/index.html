@@ -34,6 +34,7 @@
                 <button class="menu-btn" id="menu-btn" aria-label="Toggle sidebar">&#9776;</button>
                 <h1 class="topbar-title">Board Policy &amp; Administrative Procedure Tracker</h1>
                 <button class="clear-data-btn" id="clear-data-btn" title="Clear uploaded data and start fresh">&#8635; Reset</button>
+                <button class="logout-btn" id="logout-btn" title="Sign out">Sign Out</button>
                 <button class="theme-btn" id="theme-toggle" aria-label="Toggle theme">
                     <span class="t-sun">&#9788;</span><span class="t-moon">&#9790;</span>
                 </button>
@@ -168,5 +169,19 @@
     <script src="policies-data.js"></script>
     <script src="policies-content.js"></script>
     <script src="app.js"></script>
+    <script>
+    (function(){
+        var logoutBtn = document.getElementById('logout-btn');
+        if(logoutBtn){
+            logoutBtn.addEventListener('click', function(){
+                fetch('/logout', { method: 'POST' }).then(function(){
+                    window.location.href = '/login';
+                }).catch(function(){
+                    window.location.href = '/login';
+                });
+            });
+        }
+    })();
+    </script>
 </body>
 </html>

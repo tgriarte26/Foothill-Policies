@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Foothill-De Anza Policy Center</title>
+<link rel="icon" href="assets/fhda-symbol-logo.jpg">
 <!-- Typography: Open Sans (Arial fallback) used site-wide, per request —
      everything except the district logo image. -->
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -45,6 +46,7 @@
                 <span>Answers are grounded in currently published policies only</span>
             </div>
         </div>
+        <div id="conn-status" class="conn-status">Checking connection…</div>
         <div id="chat-messages">
             <div class="chat-msg bot">Hi! Ask me about any Foothill-De Anza board
                 policy or administrative procedure &mdash; for example, admissions,
@@ -97,8 +99,8 @@
 
         <form id="login-form" novalidate>
             <div class="field">
-                <label for="login-email">Email</label>
-                <input type="email" id="login-email" name="email" placeholder="you@fhda.edu" required>
+                <label for="login-email">Username</label>
+                <input type="text" id="login-email" name="username" placeholder="Your username" required>
             </div>
             <div class="field">
                 <label for="login-password">Password</label>
@@ -114,7 +116,8 @@
     </div>
 </div>
 
-<script src="policies-content.js"></script>
+<!-- If your API isn't at http://localhost:8000, set this before chatbot.js loads:
+     <script>window.POLICY_API_BASE = "https://your-api-url";</script> -->
 <script src="chatbot.js"></script>
 <script>
 (function(){
@@ -144,21 +147,35 @@
         chatInput.focus();
     });
 
-    // NOTE: this is a UI placeholder only — there is no auth backend wired
-    // up yet. On submit it just validates the fields are filled and routes
-    // to dashboard.html, which is a separate deliverable (not part of this
-    // landing page).
     form.addEventListener('submit', function(e){
         e.preventDefault();
-        var email = document.getElementById('login-email').value.trim();
+        var username = document.getElementById('login-email').value.trim();
         var password = document.getElementById('login-password').value;
-        if(!email || !password){
-            errorEl.textContent = 'Enter both your email and password to continue.';
+        if(!username || !password){
+            errorEl.textContent = 'Enter both your username and password to continue.';
             errorEl.classList.add('show');
             return;
         }
         errorEl.classList.remove('show');
-        window.location.href = 'dashboard.html';
+
+        fetch('/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: username, password: password })
+        })
+        .then(function(res){ return res.json(); })
+        .then(function(data){
+            if(data.success){
+                window.location.href = '/';
+            } else {
+                errorEl.textContent = data.message || 'Invalid credentials.';
+                errorEl.classList.add('show');
+            }
+        })
+        .catch(function(){
+            errorEl.textContent = 'A network error occurred. Please try again.';
+            errorEl.classList.add('show');
+        });
     });
 })();
 </script>
