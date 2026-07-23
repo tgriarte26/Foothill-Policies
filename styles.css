@@ -1162,3 +1162,116 @@ tbody tr:last-child td{border-bottom:none}
     transition:opacity .12s;
 }
 .markup-download-btn:hover{opacity:.8}
+
+/* === UPLOAD SECTION === */
+.upload-section{
+    margin-bottom:1.5rem;
+}
+
+.upload-box{
+    border:2px dashed var(--border-accent);
+    border-radius:12px;
+    padding:2.5rem 2rem;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .2s,background .2s;
+}
+.upload-box:hover,.upload-box.drag-over{
+    border-color:var(--accent);
+    background:var(--accent-bg);
+}
+
+.upload-content{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:.75rem;
+    color:var(--dim);
+}
+
+.upload-content svg{
+    color:var(--accent);
+}
+
+.upload-title{
+    font-size:.9rem;
+    font-weight:600;
+    color:var(--text);
+}
+
+.upload-sub{
+    font-size:.75rem;
+    color:var(--dim);
+}
+
+.upload-btn{
+    margin-top:.5rem;
+    padding:.5rem 1.25rem;
+    background:var(--accent);
+    border:none;
+    border-radius:6px;
+    color:#fff;
+    font-family:inherit;
+    font-size:.8rem;
+    font-weight:600;
+    cursor:pointer;
+    transition:opacity .12s;
+}
+.upload-btn:hover{opacity:.8}
+
+/* === CLEAR BUTTON === */
+.clear-data-btn{
+    padding:.35rem .75rem;
+    background:transparent;
+    border:1px solid var(--border-accent);
+    border-radius:6px;
+    color:var(--dim);
+    font-family:inherit;
+    font-size:.72rem;
+    font-weight:500;
+    cursor:pointer;
+    transition:color .12s,border-color .12s;
+}
+.clear-data-btn:hover{
+    color:var(--red);
+    border-color:var(--red);
+}
+
+/* === LEGAL UPDATE TEXT === */
+.legal-update-text{
+    background:var(--bg);
+    border:1px solid rgba(251,191,36,.2);
+    border-left:3px solid var(--yellow);
+    border-radius:6px;
+    padding:.75rem 1rem;
+    max-height:350px;
+    overflow-y:auto;
+}
+
+/* === UPLOAD STATUS === */
+.upload-status{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:.75rem;
+    padding:1rem;
+}
+
+.upload-spinner{
+    width:28px;
+    height:28px;
+    border:3px solid var(--border-accent);
+    border-top-color:var(--accent);
+    border-radius:50%;
+    animation:spin .8s linear infinite;
+}
+
+@keyframes spin{
+    to{transform:rotate(360deg)}
+}
+
+.upload-status-text{
+    font-size:.82rem;
+    font-weight:500;
+    color:var(--accent);
+}

@@ -62,13 +62,249 @@ function load(){
     try{cat=JSON.parse(localStorage.getItem(CK))||{};}catch(e){cat={};}
     try{stageDates=JSON.parse(localStorage.getItem(SDK))||{};}catch(e){stageDates={};}
     stages=loadStages();
-    docs=POLICIES_DATA.map(function(p,i){
-        return{id:i,number:p.number,title:p.title,chapter:p.chapter,
+
+    // Check if there's uploaded data in localStorage
+    var uploadedData=null;
+    try{uploadedData=JSON.parse(localStorage.getItem('fhda_uploaded_policies'));}catch(e){}
+
+    var source=uploadedData&&uploadedData.length?uploadedData:POLICIES_DATA;
+    docs=source.map(function(p,i){
+        return{id:i,number:p.number,title:p.title,chapter:p.chapter||'',
             type:p.type||(p.number.indexOf('AP')===0?'Administrative Procedure':'Board Policy'),
-            status:so[p.number]||'needs-review',adopted:p.adopted||'',lastRevised:p.lastRevised||'',
+            status:so[p.number]||'needs-review',adopted:p.adopted||'',lastRevised:p.lastRevised||p.revised||'',
             dueDate:dd[p.number]||'',
-            category:cat[p.number]||'optional'};
+            category:cat[p.number]||(p.category||'legally-required'),
+            note:p.note||''};
     });
+
+    // Toggle upload section visibility
+    var uploadSection=document.getElementById('upload-section');
+    if(uploadSection){
+        uploadSection.style.display=docs.length?'none':'block';
+    }
+}
+
+// --- File Upload & Parsing ---
+var UPK='fhda_uploaded_policies';
+
+function initUpload(){
+    var uploadBtn=document.getElementById('upload-btn');
+    var fileInput=document.getElementById('file-upload');
+    var uploadBox=document.getElementById('upload-box');
+
+    if(uploadBtn)uploadBtn.addEventListener('click',function(){fileInput.click();});
+    if(fileInput)fileInput.addEventListener('change',handleFileUpload);
+
+    // Drag and drop
+    if(uploadBox){
+        uploadBox.addEventListener('dragover',function(e){e.preventDefault();uploadBox.classList.add('drag-over');});
+        uploadBox.addEventListener('dragleave',function(){uploadBox.classList.remove('drag-over');});
+        uploadBox.addEventListener('drop',function(e){
+            e.preventDefault();
+            uploadBox.classList.remove('drag-over');
+            if(e.dataTransfer.files.length)processFile(e.dataTransfer.files[0]);
+        });
+    }
+}
+
+function handleFileUpload(e){
+    var file=e.target.files[0];
+    if(file)processFile(file);
+}
+
+function processFile(file){
+    var name=file.name.toLowerCase();
+    showUploadStatus('Reading file: '+file.name+'...');
+
+    if(name.endsWith('.txt')){
+        var reader=new FileReader();
+        reader.onload=function(e){
+            showUploadStatus('Parsing policy sections...');
+            setTimeout(function(){parseLegalUpdates(e.target.result);},100);
+        };
+        reader.onerror=function(){hideUploadStatus();};
+        reader.readAsText(file);
+    }else if(name.endsWith('.docx')){
+        var reader=new FileReader();
+        reader.onload=function(e){
+            showUploadStatus('Extracting text from .docx...');
+            extractDocxText(e.target.result).then(function(text){
+                if(!text||text.length<20){
+                    showUploadStatus('Could not extract text. Try saving as .txt first.');
+                    setTimeout(hideUploadStatus,3000);
+                    return;
+                }
+                showUploadStatus('Parsing policy sections ('+text.length+' chars)...');
+                setTimeout(function(){parseLegalUpdates(text);},100);
+            });
+        };
+        reader.onerror=function(){hideUploadStatus();};
+        reader.readAsArrayBuffer(file);
+    }else{
+        hideUploadStatus();
+    }
+}
+
+function showUploadStatus(msg){
+    var content=document.getElementById('upload-content');
+    var status=document.getElementById('upload-status');
+    var statusText=document.getElementById('upload-status-text');
+    if(content)content.style.display='none';
+    if(status)status.style.display='flex';
+    if(statusText)statusText.textContent=msg;
+}
+
+function hideUploadStatus(){
+    var content=document.getElementById('upload-content');
+    var status=document.getElementById('upload-status');
+    if(content)content.style.display='flex';
+    if(status)status.style.display='none';
+}
+
+function extractDocxText(arrayBuffer){
+    // Use Mammoth.js to properly extract text from .docx
+    return mammoth.extractRawText({arrayBuffer:arrayBuffer}).then(function(result){
+        return result.value;
+    }).catch(function(){
+        return '';
+    });
+}
+
+function parseLegalUpdates(text){
+    // Scan the ENTIRE text for any BP/AP policy number patterns
+    // Split into sections at each policy header found
+    var lines=text.split(/\n/);
+    var policies=[];
+    var current=null;
+    var currentLines=[];
+
+    // Pattern: BP/AP + space + number (at start of line or after whitespace)
+    var headerRe=/^((?:BP|AP)\s+\d[\d.]*)\s+(.*)/;
+
+    for(var i=0;i<lines.length;i++){
+        var line=lines[i].trim();
+        var m=headerRe.exec(line);
+
+        if(m){
+            // Save previous section
+            if(current){
+                current.content=currentLines.join('\n').trim();
+                policies.push(current);
+            }
+
+            var num=m[1].trim();
+            var title=m[2].trim()||num;
+            var category='legally-required';
+            current={number:num,title:title,chapter:guessChapter(num),
+                type:num.startsWith('AP')?'Administrative Procedure':'Board Policy',
+                category:category,note:'',revised:''};
+            currentLines=[];
+        }else if(current){
+            currentLines.push(lines[i]);
+
+            // Detect category from NOTE: lines
+            if(line.indexOf('NOTE:')===0){
+                var lower=line.toLowerCase();
+                if(lower.indexOf('legally required')!==-1)current.category='legally-required';
+                else if(lower.indexOf('legally advised')!==-1||lower.indexOf('suggested')!==-1)current.category='legally-recommended';
+                else if(lower.indexOf('optional')!==-1)current.category='optional';
+                current.note=line.replace(/^NOTE:\s*/,'').substring(0,200);
+            }
+            // Detect revision line
+            var revMatch=line.match(/^(?:Revised|New)\s+([\d/,\s;]+)/);
+            if(revMatch)current.revised=revMatch[1].trim();
+        }
+    }
+    // Last section
+    if(current){
+        current.content=currentLines.join('\n').trim();
+        policies.push(current);
+    }
+
+    if(!policies.length){
+        hideUploadStatus();
+        return;
+    }
+
+    showUploadStatus('Found '+policies.length+' policies. Loading...');
+
+    // Save and reload
+    localStorage.setItem(UPK,JSON.stringify(policies));
+
+    // Update POLICY_CONTENT for dropdown display
+    if(typeof POLICY_CONTENT!=='undefined'){
+        for(var j=0;j<policies.length;j++){
+            var found=false;
+            for(var k=0;k<POLICY_CONTENT.length;k++){
+                if(POLICY_CONTENT[k].id===policies[j].number){
+                    POLICY_CONTENT[k]={id:policies[j].number,title:policies[j].title,content:policies[j].content};
+                    found=true;break;
+                }
+            }
+            if(!found)POLICY_CONTENT.push({id:policies[j].number,title:policies[j].title,content:policies[j].content});
+        }
+    }
+
+    load();render();
+
+    // After loading policies from file, fetch current text from S3 for each
+    // so the dropdown shows both the legal update AND current policy text
+    fetchCurrentPoliciesFromS3(policies);
+}
+
+function fetchCurrentPoliciesFromS3(policies){
+    // For each policy found in the uploaded file, try to fetch
+    // the current policy text from S3 and store it for the dropdown
+    policies.forEach(function(p){
+        var urls=getS3Urls(p.number);
+        function tryFetch(i){
+            if(i>=urls.length)return;
+            fetch(urls[i]).then(function(r){
+                if(!r.ok)throw new Error('');
+                return r.text();
+            }).then(function(text){
+                // Extract just this policy's section
+                var section=extractPolicySection(text,p.number);
+                if(section&&section.length>50){
+                    // Store in POLICY_CONTENT as the "current" version
+                    var entry={id:p.number+'_current',title:p.title+' (Current)',content:section};
+                    if(typeof POLICY_CONTENT!=='undefined')POLICY_CONTENT.push(entry);
+                    // Save to localStorage for persistence
+                    var stored=JSON.parse(localStorage.getItem('fhda_s3_content')||'{}');
+                    stored[p.number]=section;
+                    localStorage.setItem('fhda_s3_content',JSON.stringify(stored));
+                }
+            }).catch(function(){tryFetch(i+1);});
+        }
+        tryFetch(0);
+    });
+}
+
+function getLegalUpdateContent(policyNum){
+    // Get the legal update text from the uploaded file (stored in localStorage)
+    var uploaded=null;
+    try{uploaded=JSON.parse(localStorage.getItem(UPK));}catch(e){}
+    if(!uploaded)return '<span class="placeholder-text">No legal update uploaded.</span>';
+    for(var i=0;i<uploaded.length;i++){
+        if(uploaded[i].number===policyNum&&uploaded[i].content){
+            var raw=uploaded[i].content;
+            var html=esc(raw).replace(/\n/g,'<br>');
+            return '<div class="policy-text legal-update-text">'+html+'</div>';
+        }
+    }
+    return '<span class="placeholder-text">No legal update for this policy.</span>';
+}
+
+function guessChapter(num){
+    var n=parseFloat(num.replace(/^(BP|AP)\s*/,''));
+    if(n>=1000&&n<2000)return'Chapter 1 - The District';
+    if(n>=2000&&n<3000)return'Chapter 2 - Board of Trustees';
+    if(n>=3000&&n<4000)return'Chapter 3 - General Institution';
+    if(n>=4000&&n<5000)return'Chapter 4 - Academic Affairs';
+    if(n>=5000&&n<6000)return'Chapter 5 - Student Services';
+    if(n>=6000&&n<7000)return'Chapter 6 - Business and Fiscal Affairs';
+    if(n>=7000&&n<8000)return'Chapter 7 - Human Resources';
+    return'';
 }
 
 function fmtD(s){
@@ -150,17 +386,14 @@ function render(){
             '<td colspan="7">'+
             '<div class="expand-content">'+
             '<div class="expand-section">'+
-            '<h4 class="expand-section-title">Current Policy Text</h4>'+
+            '<h4 class="expand-section-title">Current Policy (Boardable)</h4>'+
             '<div class="expand-section-body" id="policy-text-'+d.id+'" data-policy-num="'+esc(d.number)+'" data-loaded="false">'+
             '<span class="placeholder-text">Loading...</span>'+
             '</div>'+
             '</div>'+
             '<div class="expand-section">'+
-            '<h4 class="expand-section-title">Markup &amp; Download</h4>'+
-            '<div class="expand-section-body markup-section">'+
-            '<textarea class="markup-editor" id="markup-editor-'+d.id+'" placeholder="Edit/annotate this policy text here..."></textarea>'+
-            '<button class="markup-download-btn" data-id="'+d.id+'" data-num="'+esc(d.number)+'" data-title="'+esc(d.title)+'">Download as PDF</button>'+
-            '</div>'+
+            '<h4 class="expand-section-title">Legal Update (Uploaded File)</h4>'+
+            '<div class="expand-section-body" id="legal-text-'+d.id+'">'+getLegalUpdateContent(d.number)+'</div>'+
             '</div>'+
             '</div>'+
             '</td></tr>';
@@ -210,9 +443,8 @@ function loadPolicyText(docId,policyNum,container){
     // Try S3 first, then fallback to POLICY_CONTENT
     function tryNext(i){
         if(i>=urls.length){
-            // All S3 URLs failed — use local POLICY_CONTENT
-            container.innerHTML=getPolicyContent(policyNum);
-            populateMarkupEditor(docId,policyNum);
+            // All S3 URLs failed — show "no current policy" message
+            container.innerHTML='<span class="placeholder-text">There is no current policy on file for '+esc(policyNum)+'.</span>';
             return;
         }
         fetch(urls[i])
@@ -224,9 +456,7 @@ function loadPolicyText(docId,policyNum,container){
                 // Extract only this policy's section from the file
                 var policyText=extractPolicySection(text,policyNum);
                 if(!policyText){
-                    // S3 file didn't contain proper content for this policy
-                    container.innerHTML=getPolicyContent(policyNum);
-                    populateMarkupEditor(docId,policyNum);
+                    container.innerHTML='<span class="placeholder-text">There is no current policy on file for '+esc(policyNum)+'.</span>';
                     return;
                 }
                 // Render with formatting
@@ -251,79 +481,47 @@ function loadPolicyText(docId,policyNum,container){
 
 function extractPolicySection(fullText,policyNum){
     var lines=fullText.split('\n');
-    var startIdx=0;
 
-    // Strip the file header (Source:, Manual:, Policy:, Title:, ─── separator)
-    for(var i=0;i<Math.min(lines.length,10);i++){
-        var ln=lines[i];
-        if(ln.indexOf('───')!==-1||ln.indexOf('────')!==-1||ln.indexOf('---')!==-1&&ln.length>3){
-            startIdx=i+1;
-            break;
-        }
-        if(ln.match(/^(Source|Manual|Policy|Title):/)){
-            startIdx=i+1;
-        }
-    }
-
-    // Get content after header, skip leading blanks
-    var contentLines=lines.slice(startIdx);
-    while(contentLines.length&&contentLines[0].trim()==='')contentLines.shift();
-
-    var text=contentLines.join('\n').trim();
-    if(!text)return '';
-
-    // Count how many distinct policy headers (BP XXXX or AP XXXX) are in this file
+    // Clean the policy number
     var numClean=policyNum.replace(/[()]/g,'').replace(/\*/g,'').trim();
-    var allHeaders=[];
-    for(var k=0;k<contentLines.length;k++){
-        var t=contentLines[k].trim();
-        // A policy header: starts with BP/AP + space + digit, and is NOT a "See" reference
-        if(/^(BP|AP)\s+\d/.test(t)&&t.length>5){
-            var low=t.toLowerCase();
-            if(low.indexOf('see ')!==0&&low.indexOf('(formerly')!==0){
-                allHeaders.push(k);
-            }
-        }
-    }
 
-    // If 0 or 1 headers: the file IS this one policy — return everything
-    if(allHeaders.length<=1){
-        return text.length>50?text:'';
-    }
+    // Strategy: find ALL occurrences of this policy number in the text,
+    // then pick the one that has the MOST content after it (skip TOC stubs)
+    var candidates=[];
 
-    // Multiple headers: extract just this policy's section
-    var capturing=false;
-    var result=[];
-
-    for(var j=0;j<contentLines.length;j++){
-        var line=contentLines[j];
-        var trimmed=line.trim();
-
-        if(!capturing){
-            // Start capturing when we find THIS policy number
-            if(trimmed.indexOf(numClean)===0){
-                capturing=true;
-                result.push(line);
-            }
-        }else{
-            // Stop at the next policy header
-            if(/^(BP|AP)\s+\d/.test(trimmed)&&trimmed.length>5){
-                var lw=trimmed.toLowerCase();
-                if(lw.indexOf('see ')!==0&&lw.indexOf('(formerly')!==0&&
-                   lw.indexOf('see board')!==0&&lw.indexOf('see administrative')!==0){
-                    break;
+    for(var i=0;i<lines.length;i++){
+        var trimmed=lines[i].trim();
+        // Check if this line starts with our policy number
+        if(trimmed.indexOf(numClean)===0||trimmed.indexOf(numClean+'\t')===0){
+            // Capture from here until the next policy header
+            var section=[];
+            for(var j=i;j<lines.length;j++){
+                var ln=lines[j].trim();
+                // Stop at next policy header (but not the first line, and not "See" references)
+                if(j>i&&ln.length>5&&/^(BP|AP)\s+\d/.test(ln)){
+                    var lw=ln.toLowerCase();
+                    if(lw.indexOf('see ')!==0&&lw.indexOf('(formerly')!==0&&
+                       lw.indexOf('see board')!==0&&lw.indexOf('see administrative')!==0){
+                        break;
+                    }
                 }
+                section.push(lines[j]);
             }
-            result.push(line);
+            var text=section.join('\n').trim();
+            candidates.push(text);
         }
     }
 
-    if(result.length<2)return '';
+    if(!candidates.length)return '';
 
-    var extracted=result.join('\n').trim();
-    // Must have real substance
-    if(extracted.length<50)return '';
-    return extracted;
+    // Pick the longest candidate (that's the full content, not the TOC stub)
+    candidates.sort(function(a,b){return b.length-a.length;});
+    var best=candidates[0];
+
+    // Must have substantial content (not just a TOC line)
+    if(best.length<100)return '';
+
+    return best;
 }
 
 function populateMarkupEditor(docId,policyNum){
@@ -544,21 +742,37 @@ function setStageDate(policyNum,idx,dateVal){
 
 // --- Policy Content (Boardable) ---
 function getPolicyContent(policyNum){
+    // Flexible matching: strip *, (New), extra spaces for comparison
+    var clean=policyNum.replace(/\*/g,'').replace(/\(New\)/gi,'').replace(/\s+/g,' ').trim();
+    var numOnly=clean.replace(/\s*\(.*?\)\s*/g,'').trim();
+    var justDigits=numOnly.replace(/^(BP|AP)\s*/,'').trim();
+    var prefix=policyNum.substring(0,2);
+
     for(var i=0;i<POLICY_CONTENT.length;i++){
-        if(POLICY_CONTENT[i].id===policyNum){
-            var raw=POLICY_CONTENT[i].content;
-            // Convert bullet formatting to HTML
-            var html=esc(raw)
-                .replace(/\n  • (.*?)(?=\n|$)/g,'\n<li>$1</li>')
-                .replace(/\n  (\d+[\.\)]\s.*?)(?=\n|$)/g,'\n<li>$1</li>')
-                .replace(/\n• (.*?)(?=\n|$)/g,'\n<li>$1</li>')
-                .replace(/(<li>.*?<\/li>\n?)+/g,'<ul>$&</ul>')
-                .replace(/\n\n/g,'</p><p>')
-                .replace(/\n/g,'<br>');
-            return '<div class="policy-text"><p>'+html+'</p></div>';
+        var pid=POLICY_CONTENT[i].id.replace(/\*/g,'').replace(/\(New\)/gi,'').replace(/\s+/g,' ').trim();
+        if(pid===clean||pid===numOnly||pid===policyNum){
+            return renderPolicyHtml(POLICY_CONTENT[i].content);
         }
     }
-    return '<span class="placeholder-text">No policy content available. Run NEWscrape_policies.py to generate.</span>';
+    // Partial match: compare just the number part (e.g., "3200")
+    for(var j=0;j<POLICY_CONTENT.length;j++){
+        var pid2=POLICY_CONTENT[j].id.replace(/\*/g,'').replace(/\(New\)/gi,'').replace(/^(BP|AP)\s*/,'').trim();
+        if(pid2===justDigits&&POLICY_CONTENT[j].id.substring(0,2)===prefix){
+            return renderPolicyHtml(POLICY_CONTENT[j].content);
+        }
+    }
+    return '<span class="placeholder-text">No policy content available. Run scrape_policies.py to populate.</span>';
+}
+
+function renderPolicyHtml(raw){
+    var html=esc(raw)
+        .replace(/\n  • (.*?)(?=\n|$)/g,'\n<li>$1</li>')
+        .replace(/\n  (\d+[\.\)]\s.*?)(?=\n|$)/g,'\n<li>$1</li>')
+        .replace(/\n• (.*?)(?=\n|$)/g,'\n<li>$1</li>')
+        .replace(/(<li>.*?<\/li>\n?)+/g,'<ul>$&</ul>')
+        .replace(/\n\n/g,'</p><p>')
+        .replace(/\n/g,'<br>');
+    return '<div class="policy-text"><p>'+html+'</p></div>';
 }
 
 // --- S3 Fetch ---
@@ -650,9 +864,24 @@ function loadFromS3(docId,policyNum){
 }
 
 function init(){
-    initTheme();load();render();
+    initTheme();load();render();initUpload();
     themeBtn.addEventListener('click',toggleTheme);
     menuBtn.addEventListener('click',function(){sidebar.classList.toggle('open');});
+
+    // Clear data button
+    var clearBtn=document.getElementById('clear-data-btn');
+    if(clearBtn)clearBtn.addEventListener('click',function(){
+        if(confirm('Clear all uploaded policy data? This will reset the tracker.')){
+            localStorage.removeItem(UPK);
+            localStorage.removeItem(SK);
+            localStorage.removeItem(DK);
+            localStorage.removeItem(TLK);
+            localStorage.removeItem(CK);
+            docs=[];
+            load();render();
+            document.getElementById('upload-section').style.display='block';
+        }
+    });
     searchIn.addEventListener('input',function(){query=searchIn.value;render();});
     sortSel.addEventListener('change',function(){sort=sortSel.value;render();});
 

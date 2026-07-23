@@ -33,6 +33,7 @@
             <header class="topbar">
                 <button class="menu-btn" id="menu-btn" aria-label="Toggle sidebar">&#9776;</button>
                 <h1 class="topbar-title">Board Policy &amp; Administrative Procedure Tracker</h1>
+                <button class="clear-data-btn" id="clear-data-btn" title="Clear uploaded data and start fresh">&#8635; Reset</button>
                 <button class="theme-btn" id="theme-toggle" aria-label="Toggle theme">
                     <span class="t-sun">&#9788;</span><span class="t-moon">&#9790;</span>
                 </button>
@@ -40,10 +41,27 @@
 
             <div class="metrics">
                 <div class="metric"><span class="metric-val" id="stat-total">0</span><span class="metric-lbl">Total</span></div>
-                <div class="metric"><span class="metric-val accent-yellow" id="stat-review">0</span><span class="metric-lbl">Review</span></div>
+                <div class="metric"><span class="metric-val accent-yellow" id="stat-review">0</span><span class="metric-lbl">Needs Review</span></div>
                 <div class="metric"><span class="metric-val accent-blue" id="stat-progress">0</span><span class="metric-lbl">In Progress</span></div>
                 <div class="metric"><span class="metric-val accent-green" id="stat-completed">0</span><span class="metric-lbl">Done</span></div>
             </div>
+
+            <!-- Upload Section -->
+            <section class="upload-section" id="upload-section">
+                <div class="upload-box" id="upload-box">
+                    <input type="file" id="file-upload" accept=".docx,.txt,.pdf" hidden>
+                    <div class="upload-content" id="upload-content">
+                        <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 20V8m0 0l-5 5m5-5l5 5M6 24h20"/></svg>
+                        <p class="upload-title">Upload Legal Updates File</p>
+                        <p class="upload-sub">Drop a .docx or .txt file with policy updates (e.g., CCLC Update 47)</p>
+                        <button class="upload-btn" id="upload-btn">Choose File</button>
+                    </div>
+                    <div class="upload-status" id="upload-status" style="display:none;">
+                        <div class="upload-spinner"></div>
+                        <p class="upload-status-text" id="upload-status-text">Processing file...</p>
+                    </div>
+                </div>
+            </section>
 
             <div class="bar">
                 <input type="text" id="search-input" class="search" placeholder="Search policies...">
@@ -128,6 +146,8 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
     <script src="policies-data.js"></script>
     <script src="policies-content.js"></script>
     <script src="app.js"></script>
