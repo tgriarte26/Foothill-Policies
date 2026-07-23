@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Foothill-De Anza Policy Center</title>
+<!-- Typography: Open Sans (Arial fallback) used site-wide, per request —
+     everything except the district logo image. -->
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="landing-styles.css">
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="site-header">
+    <a class="brand" href="#top" aria-label="Foothill-De Anza Community College District">
+        <img src="assets/fhda-horizontal-logo.jpg" alt="Foothill-De Anza Community College District">
+    </a>
+    <nav class="site-nav">
+        <a class="nav-link" href="#ask">Ask a Question</a>
+        <a class="nav-link" href="#about">About</a>
+        <button class="btn-login" id="open-login">Faculty &amp; Staff Login</button>
+    </nav>
+</header>
+
+<!-- ===== HERO ===== -->
+<section class="hero" id="top">
+    <span class="hero-eyebrow">Board Policy &amp; Administrative Procedure</span>
+    <h1>Foothill-De Anza Policy Center</h1>
+    <p>Ask questions about currently published board policies and administrative
+        procedures, or sign in to manage policy review and revision status.</p>
+    <div class="hero-actions">
+        <button class="btn-primary" id="cta-ask">Ask the Policy Assistant</button>
+        <button class="btn-secondary" id="cta-login">Faculty &amp; Staff Login</button>
+    </div>
+</section>
+
+<!-- ===== PUBLIC CHATBOT ===== -->
+<section class="chat-section" id="ask">
+    <div class="chat-card">
+        <div class="chat-card-head">
+            <div class="chat-avatar"><img src="assets/fhda-symbol-logo.jpg" alt=""></div>
+            <div>
+                <strong>FHDA Policy Assistant</strong>
+                <span>Answers are grounded in currently published policies only</span>
+            </div>
+        </div>
+        <div id="chat-messages">
+            <div class="chat-msg bot">Hi! Ask me about any Foothill-De Anza board
+                policy or administrative procedure &mdash; for example, admissions,
+                grading, board meetings, harassment, financial aid, or employee travel.</div>
+        </div>
+        <div class="chat-input-row">
+            <input type="text" id="chat-input" placeholder="Ask about a policy or procedure..." autocomplete="off">
+            <button id="chat-send">Send</button>
+        </div>
+        <div class="chat-hint">This assistant only references currently published
+            policies. Policies mid-revision are excluded until approved.</div>
+    </div>
+</section>
+
+<!-- ===== FEATURES ===== -->
+<section class="features" id="about">
+    <div class="feature-card">
+        <div class="f-icon">&#128172;</div>
+        <h3>Ask Anytime, Publicly</h3>
+        <p>Open to anyone, built primarily so faculty and staff can quickly find
+            answers instead of digging through PDFs.</p>
+    </div>
+    <div class="feature-card">
+        <div class="f-icon">&#128274;</div>
+        <h3>Faculty &amp; Staff Dashboard</h3>
+        <p>Board members and staff sign in to track review status, approval
+            timelines, and flagged policies needing revision.</p>
+    </div>
+    <div class="feature-card">
+        <div class="f-icon">&#9989;</div>
+        <h3>Ground-Truth Only</h3>
+        <p>Both the assistant and the dashboard draw from the same source of
+            record &mdash; only current, published policy content.</p>
+    </div>
+</section>
+
+<footer class="site-footer">
+    Foothill-De Anza Community College District &middot; Board Policy &amp; Administrative Procedure Tracker
+</footer>
+<div class="horizon-bar" aria-hidden="true"></div>
+
+<!-- ===== FACULTY LOGIN MODAL ===== -->
+<div class="overlay" id="login-overlay">
+    <div class="login-modal">
+        <button class="modal-x" id="login-close" aria-label="Close">&times;</button>
+        <h2>Faculty &amp; Staff Login</h2>
+        <p class="login-sub">Sign in to access the policy tracking dashboard.</p>
+
+        <div class="login-error" id="login-error">Enter both your email and password to continue.</div>
+
+        <form id="login-form" novalidate>
+            <div class="field">
+                <label for="login-email">Email</label>
+                <input type="email" id="login-email" name="email" placeholder="you@fhda.edu" required>
+            </div>
+            <div class="field">
+                <label for="login-password">Password</label>
+                <input type="password" id="login-password" name="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" required>
+            </div>
+            <div class="field-row">
+                <label><input type="checkbox" id="login-remember"> Remember me</label>
+                <a class="forgot-link" href="#">Forgot password?</a>
+            </div>
+            <button type="submit" class="btn-primary btn-block">Log In &amp; Go to Dashboard</button>
+        </form>
+        <p class="login-footnote">Access is limited to authorized Foothill-De Anza faculty and staff.</p>
+    </div>
+</div>
+
+<script src="policies-content.js"></script>
+<script src="chatbot.js"></script>
+<script>
+(function(){
+    'use strict';
+    var overlay = document.getElementById('login-overlay');
+    var openBtns = [document.getElementById('open-login'), document.getElementById('cta-login')];
+    var closeBtn = document.getElementById('login-close');
+    var form = document.getElementById('login-form');
+    var errorEl = document.getElementById('login-error');
+    var askBtn = document.getElementById('cta-ask');
+    var chatInput = document.getElementById('chat-input');
+
+    function openModal(){
+        overlay.classList.add('open');
+        errorEl.classList.remove('show');
+        document.getElementById('login-email').focus();
+    }
+    function closeModal(){ overlay.classList.remove('open'); }
+
+    openBtns.forEach(function(b){ if(b) b.addEventListener('click', openModal); });
+    closeBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', function(e){ if(e.target === overlay) closeModal(); });
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeModal(); });
+
+    askBtn.addEventListener('click', function(){
+        document.getElementById('ask').scrollIntoView({behavior:'smooth'});
+        chatInput.focus();
+    });
+
+    // NOTE: this is a UI placeholder only — there is no auth backend wired
+    // up yet. On submit it just validates the fields are filled and routes
+    // to dashboard.html, which is a separate deliverable (not part of this
+    // landing page).
+    form.addEventListener('submit', function(e){
+        e.preventDefault();
+        var email = document.getElementById('login-email').value.trim();
+        var password = document.getElementById('login-password').value;
+        if(!email || !password){
+            errorEl.textContent = 'Enter both your email and password to continue.';
+            errorEl.classList.add('show');
+            return;
+        }
+        errorEl.classList.remove('show');
+        window.location.href = 'dashboard.html';
+    });
+})();
+</script>
+</body>
+</html>

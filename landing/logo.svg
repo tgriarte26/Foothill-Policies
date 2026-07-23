@@ -1,0 +1,31 @@
+<svg viewBox="0 0 460 90" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Foothill-De Anza Community College District">
+  <defs>
+    <linearGradient id="fhdaHorizon" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFC600"/>
+      <stop offset="1" stop-color="#A6192E"/>
+    </linearGradient>
+    <clipPath id="fhdaCircleClip">
+      <circle cx="45" cy="45" r="43"/>
+    </clipPath>
+  </defs>
+
+  <!-- Symbol: gradient circle with tower / arch / horizon mark -->
+  <g clip-path="url(#fhdaCircleClip)">
+    <circle cx="45" cy="45" r="43" fill="url(#fhdaHorizon)"/>
+    <!-- bell tower, left -->
+    <rect x="20" y="30" width="16" height="26" fill="#ffffff"/>
+    <rect x="16" y="26" width="24" height="5" fill="#ffffff"/>
+    <rect x="26" y="18" width="4" height="8" fill="#ffffff"/>
+    <!-- arch, right -->
+    <path d="M42 56 L42 34 A11 11 0 0 1 64 34 L64 56 Z" fill="#ffffff"/>
+    <path d="M47 56 L47 35 A6 6 0 0 1 59 35 L59 56 Z" fill="url(#fhdaHorizon)"/>
+    <!-- rolling hills / horizon -->
+    <path d="M0 62 Q23 52 46 62 T92 62 L92 90 L0 90 Z" fill="#ffffff"/>
+    <path d="M0 72 Q23 64 46 72 T92 72 L92 90 L0 90 Z" fill="url(#fhdaHorizon)" opacity=".55"/>
+  </g>
+  <circle cx="45" cy="45" r="43" fill="none" stroke="#ffffff" stroke-opacity=".15" stroke-width="1"/>
+
+  <!-- Wordmark -->
+  <text x="102" y="42" font-family="Arial Narrow, Arial, Helvetica, sans-serif" font-weight="800" font-size="30" letter-spacing="0.5" fill="#000000">FOOTHILL-DE ANZA</text>
+  <text x="102" y="62" font-family="Arial Narrow, Arial, Helvetica, sans-serif" font-weight="700" font-size="14" letter-spacing="2.4" fill="#000000">COMMUNITY COLLEGE DISTRICT</text>
+</svg>
